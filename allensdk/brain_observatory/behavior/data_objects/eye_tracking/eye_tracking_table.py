@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from pynwb import NWBFile, TimeSeries
 
+from allensdk.brain_observatory import sync_utilities
+from allensdk.brain_observatory.sync_dataset import Dataset
 from allensdk.brain_observatory.behavior.data_files.eye_tracking_video import \
     EyeTrackingVideo
 from allensdk.brain_observatory.behavior.data_objects import (
@@ -15,6 +17,7 @@ from allensdk.brain_observatory.behavior.data_files.eye_tracking_file import \
 from allensdk.brain_observatory.behavior.\
     data_files.eye_tracking_metadata_file import EyeTrackingMetadataFile
 from allensdk.core import DataObject
+from allensdk.brain_observatory.behavior.data_files import SyncFile
 from allensdk.core import \
     NwbReadableInterface, DataFileReadableInterface
 from allensdk.core import \
@@ -262,6 +265,39 @@ class EyeTrackingTable(DataObject, DataFileReadableInterface,
             else:
                 raise
 
+        return EyeTrackingTable(eye_tracking=eye_tracking_data)
+    
+    @classmethod
+    def from_data_file_for_ophys(cls, data_file: EyeTrackingFile,
+                       sync_file: SyncFile,
+                       z_threshold: float = 3.0, dilation_frames: int = 2
+                       ) -> "EyeTrackingTable":
+        """
+        Parameters
+        ----------
+        data_file
+        sync_file
+        z_threshold : float, optional
+            See EyeTracking.from_lims
+        dilation_frames : int, optional
+             See EyeTracking.from_lims
+        """
+        cls._logger.info(f"Getting eye_tracking_data with "
+                         f"'z_threshold={z_threshold}', "
+                         f"'dilation_frames={dilation_frames}'")
+
+        sync_path = Path(sync_file.filepath)
+
+        frame_times = sync_utilities.get_synchronized_frame_times(
+            session_sync_file=sync_path,
+            sync_line_label_keys=Dataset.EYE_TRACKING_KEYS,
+            trim_after_spike=False)
+        eye_data = data_file.data.loc[frames]
+
+        eye_tracking_data = process_eye_tracking_data(eye_data,
+                                                      frame_times,
+                                                      z_threshold,
+                                                      dilation_frames)
         return EyeTrackingTable(eye_tracking=eye_tracking_data)
 
     @classmethod

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 from pathlib import Path
 
 import pandas as pd
@@ -26,18 +26,34 @@ class EyeTrackingFile(DataFile):
     @classmethod
     def from_lims(
         cls, db: PostgresQueryMixin,
-        behavior_session_id: Union[int, str]
+        behavior_session_id: Optional[Union[int, str]] = None,
+        ophys_experiment_id: Optional[Union[int, str]] = None
     ) -> "EyeTrackingFile":
-        query = f"""
-                SELECT wkf.storage_directory || wkf.filename AS eye_tracking_file
-                FROM behavior_sessions bs
-                JOIN ophys_sessions os ON os.id = bs.ophys_session_id
-                LEFT JOIN well_known_files wkf ON wkf.attachable_id = os.id
-                JOIN well_known_file_types wkft ON wkf.well_known_file_type_id = wkft.id
-                WHERE wkf.attachable_type = 'OphysSession'
-                    AND wkft.name = 'EyeTracking Ellipses'
-                    AND bs.id = {behavior_session_id};
-                """  # noqa E501
+        if behavior_session_id is not None:
+            query = f"""
+                    SELECT wkf.storage_directory || wkf.filename AS eye_tracking_file
+                    FROM behavior_sessions bs
+                    JOIN ophys_sessions os ON os.id = bs.ophys_session_id
+                    LEFT JOIN well_known_files wkf ON wkf.attachable_id = os.id
+                    JOIN well_known_file_types wkft ON wkf.well_known_file_type_id = wkft.id
+                    WHERE wkf.attachable_type = 'OphysSession'
+                        AND wkft.name = 'EyeTracking Ellipses'
+                        AND bs.id = {behavior_session_id};
+                    """  # noqa E501
+        elif ophys_experiment_id is not None:    
+            query = f"""
+                    SELECT wkf.storage_directory || wkf.filename AS eye_tracking_file
+                    FROM ophys_experiments oe
+                    LEFT JOIN well_known_files wkf ON wkf.attachable_id = oe.ophys_session_id
+                    JOIN well_known_file_types wkft ON wkf.well_known_file_type_id = wkft.id
+                    WHERE wkf.attachable_type = 'OphysSession'
+                        AND wkft.name = 'EyeTracking Ellipses'
+                        AND oe.id = {ophys_experiment_id};
+                    """  # noqa E501
+        else:
+            raise RuntimeError(
+                "Eye tracking file requires an ID"
+            )
         try:
             filepath = db.fetchone(query, strict=True)
         except OneResultExpectedError:

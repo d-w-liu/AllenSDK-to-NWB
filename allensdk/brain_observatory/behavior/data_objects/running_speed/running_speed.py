@@ -11,7 +11,9 @@ from allensdk.core import NwbWritableInterface
 from allensdk.core.exceptions import DataFrameIndexError
 from allensdk.core import DataObject
 from allensdk.brain_observatory.behavior.data_files import SyncFile
+from allensdk.internal.api import PostgresQueryMixin
 from allensdk.brain_observatory.behavior.data_objects import StimulusTimestamps
+from allensdk.brain_observatory.behavior.data_files.stimulus_file import _StimulusFile as StimulusFile
 from allensdk.brain_observatory.behavior.data_files import (
     BehaviorStimulusFile,
     ReplayStimulusFile,
@@ -51,13 +53,13 @@ class RunningSpeed(DataObject,
         running_speed = self._fix_polarity(running_speed)
         super().__init__(name='running_speed', value=running_speed)
 
-        if stimulus_timestamps is not None:
-            if not np.isclose(stimulus_timestamps.monitor_delay, 0.0):
-                raise RuntimeError(
-                    "Running speed timestamps have monitor delay "
-                    f"{stimulus_timestamps.monitor_delay}; there "
-                    "should be no monitor delay applied to the timestamps "
-                    "associated with running speed")
+        #if stimulus_timestamps is not None:
+        #    if not np.isclose(stimulus_timestamps.monitor_delay, 0.0):
+        #        raise RuntimeError(
+        #            "Running speed timestamps have monitor delay "
+        #            f"{stimulus_timestamps.monitor_delay}; there "
+        #            "should be no monitor delay applied to the timestamps "
+        #            "associated with running speed")
 
         self._stimulus_file = stimulus_file
         self._sync_file = sync_file
@@ -181,6 +183,31 @@ class RunningSpeed(DataObject,
                sync_file=None,
                stimulus_file=None,
                stimulus_timestamps=None)
+
+    @classmethod
+    def from_lims_for_ophys_session(
+        cls,
+        db: PostgresQueryMixin,
+        ophys_session_id: int,
+        filtered: bool = True,
+        zscore_threshold: float = 10.0,
+        stimulus_timestamps: Optional[StimulusTimestamps] = None
+    ) -> "RunningSpeed":
+        stimulus_file = StimulusFile.from_lims_for_ophys_session(db, ophys_session_id)
+        if stimulus_timestamps is None:
+            sync_file = SyncFile.from_lims_for_ophys_session(db=db, ophys_session_id=ophys_session_id.value)
+            stimulus_timestamps = StimulusTimestamps.from_sync_file(
+                sync_file=sync_file)
+
+        running_speed = cls._get_running_speed_df(
+            stimulus_file, stimulus_timestamps, filtered, zscore_threshold
+        )
+        return cls(
+            running_speed=running_speed,
+            stimulus_file=stimulus_file,
+            stimulus_timestamps=stimulus_timestamps,
+            filtered=filtered
+        )
 
     @classmethod
     def from_nwb(

@@ -1,6 +1,9 @@
 
 from typing import Optional
 
+from cachetools import cached, LRUCache
+from cachetools.keys import hashkey
+
 import pandas as pd
 import numpy as np
 
@@ -10,8 +13,12 @@ from pynwb.base import TimeSeries
 from allensdk.core import NwbReadableInterface
 from allensdk.core import NwbWritableInterface
 from allensdk.core import DataObject
+from allensdk.internal.api import PostgresQueryMixin
+from allensdk.brain_observatory.behavior.data_objects.stimuli.util import \
+    calculate_monitor_delay
 from allensdk.brain_observatory.behavior.data_objects import StimulusTimestamps
 from allensdk.brain_observatory.behavior.data_files import SyncFile
+from allensdk.brain_observatory.behavior.data_files.stimulus_file import _StimulusFile as StimulusFile
 from allensdk.brain_observatory.behavior.data_files import (
     BehaviorStimulusFile,
     ReplayStimulusFile,
@@ -24,6 +31,14 @@ from allensdk.brain_observatory.behavior.data_objects.running_speed.running_proc
 from allensdk.brain_observatory.behavior.data_objects.\
     running_speed.multi_stim_running_processing import (
         _get_multi_stim_running_df)
+
+def from_lims_cache_key(
+    cls, db,
+    behavior_session_id: int, ophys_experiment_id: Optional[int] = None
+):
+    return hashkey(
+        behavior_session_id, ophys_experiment_id
+    )
 
 
 class RunningAcquisition(DataObject,
@@ -123,6 +138,32 @@ class RunningAcquisition(DataObject,
                 running_acquisition=df,
                 stimulus_file=None,
                 stimulus_timestamps=None)
+
+    @classmethod
+    @cached(cache=LRUCache(maxsize=10), key=from_lims_cache_key)
+    def from_lims_for_ophys_session(
+        cls,
+        db: PostgresQueryMixin,
+        ophys_session_id: int,
+        ophys_experiment_id: Optional[int] = None,
+    ) -> "RunningAcquisition":
+
+        stimulus_file = StimulusFile.from_lims_for_ophys_session(db, ophys_session_id)
+        sync_file = SyncFile.from_lims_for_ophys_session(db=db, ophys_session_id=ophys_session_id)
+        stimulus_timestamps = StimulusTimestamps.from_sync_file(
+            sync_file=sync_file, monitor_delay=0.0)
+
+        running_acq_df = get_running_df(
+            data=stimulus_file.data, time=stimulus_timestamps.value,
+        )
+        running_acq_df.drop("speed", axis=1, inplace=True)
+
+        return cls(
+            running_acquisition=running_acq_df,
+            stimulus_file=stimulus_file,
+            stimulus_timestamps=stimulus_timestamps,
+        )
+
 
     @classmethod
     def from_nwb(

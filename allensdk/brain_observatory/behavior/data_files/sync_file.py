@@ -12,6 +12,17 @@ from allensdk.internal.core import DataFile
 from allensdk.brain_observatory.behavior.sync import get_sync_data
 from allensdk.core import DataObject
 
+SYNC_FILE_SESSION_QUERY_TEMPLATE = """
+    SELECT wkf.storage_directory || wkf.filename AS sync_file
+    FROM ophys_experiments oe
+    JOIN ophys_sessions os ON oe.ophys_session_id = os.id
+    JOIN well_known_files wkf ON wkf.attachable_id = os.id
+    JOIN well_known_file_types wkft
+    ON wkft.id = wkf.well_known_file_type_id
+    WHERE wkf.attachable_type = 'OphysSession'
+    AND wkft.name = 'OphysRigSync'
+    AND os.id = {ophys_session_id};
+"""
 
 def _get_sync_file_query_template(behavior_session_id: int):
 
@@ -37,6 +48,9 @@ def from_json_cache_key(cls, dict_repr: dict, permissive: bool = False):
 
 def from_lims_cache_key(cls, db, behavior_session_id: int):
     return hashkey(behavior_session_id)
+
+def from_lims_cache_key_session(cls, db, ophys_session_id: int):
+    return hashkey(ophys_session_id)
 
 
 class SyncFile(DataFile):
@@ -82,6 +96,19 @@ class SyncFile(DataFile):
             behavior_session_id=behavior_session_id)
         filepath = db.fetchone(query, strict=True)
         return cls(filepath=filepath, permissive=permissive)
+
+
+    @classmethod
+    @cached(cache=LRUCache(maxsize=10), key=from_lims_cache_key_session)
+    def from_lims_for_ophys_session(
+        cls, db: PostgresQueryMixin,
+        ophys_session_id: Union[int, str]
+    ) -> "SyncFile":
+        query = SYNC_FILE_SESSION_QUERY_TEMPLATE.format(
+            ophys_session_id=ophys_session_id
+        )
+        filepath = db.fetchall(query, strict=True)[0]
+        return cls(filepath=filepath)
 
     @staticmethod
     def load_data(filepath: Union[str, Path],
