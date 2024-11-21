@@ -53,7 +53,7 @@ class VisualCodingOphysMetadata(DataObject, LimsReadableInterface,
     @classmethod
     def from_lims(cls, ophys_experiment_id: int,
                   lims_db: PostgresQueryMixin,
-                  is_multiplane=False) -> "BehaviorOphysMetadata":
+                  is_multiplane=False) -> "VisualCodingOphysMetadata":
         """
 
         Parameters
@@ -134,13 +134,13 @@ class VisualCodingOphysMetadata(DataObject, LimsReadableInterface,
                    ophys_metadata=ophys_metadata)
 
     def to_nwb(self, nwbfile: NWBFile) -> NWBFile:
-        self._behavior_metadata.subject_metadata.to_nwb(nwbfile=nwbfile)
-        self._behavior_metadata.equipment.to_nwb(nwbfile=nwbfile)
+        self._visualcoding_metadata.subject_metadata.to_nwb(nwbfile=nwbfile)
+        self._visualcoding_metadata.equipment.to_nwb(nwbfile=nwbfile)
 
         nwb_extension = load_pynwb_extension(
             OphysBehaviorMetadataSchema, 'ndx-aibs-behavior-ophys')
 
-        behavior_meta = self._behavior_metadata
+        visualcoding_meta = self._visualcoding_metadata
         ophys_meta = self._ophys_metadata
 
         if isinstance(ophys_meta, MultiplaneMetadata):
@@ -157,14 +157,18 @@ class VisualCodingOphysMetadata(DataObject, LimsReadableInterface,
             field_of_view_height=ophys_meta.field_of_view_shape.height,
             imaging_plane_group=imaging_plane_group,
             imaging_plane_group_count=imaging_plane_group_count,
-            stimulus_frame_rate=behavior_meta.stimulus_frame_rate,
-            experiment_container_id=ophys_meta.experiment_container_id,
+            stimulus_frame_rate=visualcoding_meta.stimulus_frame_rate,
+            ophys_container_id=ophys_meta.ophys_container_id,
             ophys_experiment_id=ophys_meta.ophys_experiment_id,
-            session_type=behavior_meta.session_type,
-            equipment_name=behavior_meta.equipment.value,
+            session_type=visualcoding_meta.session_type,
+            equipment_name=visualcoding_meta.equipment.value,
             imaging_depth=ophys_meta.imaging_depth,
-            behavior_session_uuid=str(behavior_meta.behavior_session_uuid),
-            behavior_session_id=behavior_meta.behavior_session_id
+            behavior_session_uuid=str(visualcoding_meta.behavior_session_uuid),
+            #behavior_session_id=behavior_meta.behavior_session_id
+            behavior_session_id=0,
+            project_code=ophys_meta.project_code,
+            targeted_imaging_depth=ophys_meta.targeted_imaging_depth
+
         )
         nwbfile.add_lab_meta_data(nwb_metadata)
 

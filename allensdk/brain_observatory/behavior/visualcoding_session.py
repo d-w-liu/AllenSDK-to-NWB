@@ -20,7 +20,9 @@ from allensdk.brain_observatory.behavior.data_objects.base \
 from allensdk.brain_observatory.behavior.data_objects.licks import Licks
 from allensdk.brain_observatory.behavior.data_objects.metadata \
     .behavior_metadata.behavior_metadata import \
-    BehaviorMetadata, get_expt_description
+    BehaviorMetadata
+from allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.visualcoding_metadata import \
+    get_expt_description
 from allensdk.brain_observatory.behavior.data_objects.metadata \
     .behavior_metadata.visualcoding_metadata import \
     VisualCodingMetadata
@@ -327,11 +329,17 @@ class VisualCodingSession(DataObject, LimsReadableInterface,
         if add_metadata:
             self._metadata.to_nwb(nwbfile=nwbfile)
 
-        self._licks.to_nwb(nwbfile=nwbfile)
-        self._rewards.to_nwb(nwbfile=nwbfile)
-        self._stimuli.to_nwb(nwbfile=nwbfile)
-        self._task_parameters.to_nwb(nwbfile=nwbfile)
-        self._trials.to_nwb(nwbfile=nwbfile)
+        if self._licks is not None:
+            self._licks.to_nwb(nwbfile=nwbfile)
+        if self._rewards is not None:
+            self._rewards.to_nwb(nwbfile=nwbfile)
+
+        # self._stimuli.to_nwb(nwbfile=nwbfile)
+
+        if self._task_parameters is not None:
+            self._task_parameters.to_nwb(nwbfile=nwbfile)
+        if self._trials is not None:
+            self._trials.to_nwb(nwbfile=nwbfile)
 
         return nwbfile
 

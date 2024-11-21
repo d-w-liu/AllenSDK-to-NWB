@@ -784,7 +784,7 @@ class VisualCodingOphysExperiment(VisualCodingSession):
             imaging_plane_group_meta.plane_group_count > 1
 
     def _get_session_type(self) -> str:
-        return self._metadata.behavior_metadata.session_type
+        return self._metadata.visualcoding_metadata.session_type
 
     @staticmethod
     def _get_keywords():

@@ -766,8 +766,9 @@ class CellSpecimens(
         # 5. Add Corrected fluorescence traces
         self._corrected_fluorescence_traces.to_nwb(nwbfile=nwbfile)
 
-        # 6. Add events
-        self._events.to_nwb(nwbfile=nwbfile)
+        # 6. Add events or skip if we skipped events on import
+        if self._events is not None:
+            self._events.to_nwb(nwbfile=nwbfile)
 
         # 7. Add segmentation mask image
         add_image_to_nwb(
