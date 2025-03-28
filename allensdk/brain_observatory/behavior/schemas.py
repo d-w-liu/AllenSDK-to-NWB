@@ -66,11 +66,13 @@ class BehaviorMetadataSchema(RaisingSchema):
 
     behavior_session_id = fields.Int(
         doc='The unique ID for the behavior session',
-        required=True
+        allow_none=True,
+        required=False
     )
     behavior_session_uuid = fields.UUID(
         doc='MTrain record for session, also called foraging_id',
-        required=True,
+        allow_none=True,
+        required=False,
     )
     stimulus_frame_rate = fields.Float(
         doc=('Frame rate (frames/second) of the '
@@ -95,7 +97,7 @@ class BehaviorMetadataSchema(RaisingSchema):
     project_code = fields.String(
         doc='String Id of project associated with session.',
         allow_none=True,
-        required=True,
+        required=False,
     )
 
 
@@ -173,18 +175,20 @@ class OphysMetadataSchema(NwbOphysMetadataSchema):
         doc=('A numeric index which indicates the order that an imaging plane '
              'was acquired for a mesoscope experiment. Will be -1 for '
              'non-mesoscope data'),
-        required=True
+        allow_none=True,
+        required=False
     )
     imaging_plane_group_count = fields.Int(
         doc=('The total number of plane groups collected in a session '
              'for a mesoscope experiment. Will be 0 if the scope did not '
              'capture multiple concurrent imaging planes.'),
-        required=True
+        allow_none=True,
+        required=False
     )
     project_code = fields.String(
         doc='String Id of project associated with session.',
         allow_none=True,
-        required=True,
+        required=False,
     )
 
 
@@ -200,7 +204,7 @@ class OphysBehaviorMetadataSchema(BehaviorMetadataSchema, OphysMetadataSchema):
     # OpticalChannel, ImagingPlane, NWBFile
     neurodata_skip = {"emission_lambda", "excitation_lambda", "indicator",
                       "targeted_structure", "date_of_acquisition",
-                      "ophys_frame_rate"}
+                      "ophys_frame_rate", "behavior_session_id", "imaging_plane_group", "imaging_plane_group_count", "behavior_session_uuid", "project_code"}
 
 
 class CompleteOphysBehaviorMetadataSchema(OphysBehaviorMetadataSchema,

@@ -1,0 +1,9 @@
+namespaces:
+- author: Allen Institute for Brain Science
+  contact: waynew@alleninstitute.org
+  doc: Allen Institute behavior and optical physiology extensions
+  name: ndx-aibs-mesoscope-metadata
+  schema:
+  - namespace: core
+  - source: ndx-aibs-mesoscope-metadata.extension.yaml
+  version: 0.2.0

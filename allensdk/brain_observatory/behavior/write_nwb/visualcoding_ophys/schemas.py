@@ -79,6 +79,9 @@ class VisualCodingExperimentMetadataSchema(BehaviorSessionMetadataSchema):
         required=True,
         description="ID of the ophys session this experiment is a member of.",
     )
+    ophys_fovs = dict(
+        description = "Dictionary of optical fields of view. Each key contains a different imaging plane as a dictionary."
+    )
     stimulus_frame_rate = Float(
         required=False,
         allow_none=True,
