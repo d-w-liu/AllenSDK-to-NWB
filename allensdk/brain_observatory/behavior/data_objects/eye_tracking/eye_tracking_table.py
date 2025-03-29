@@ -346,7 +346,7 @@ class EyeTrackingTable(DataObject, DataFileReadableInterface,
                 f'Number of eye tracking frames: {len(frames)}. '
                 f'Truncating timestamps')
             times = times.update_timestamps(
-                timestamps=times.value[0:len(frames)])
+                timestamps=times.value[:len(frames)])
         elif len(frames) > len(times):
             frames = frames[:len(times)]
         return frames, times
