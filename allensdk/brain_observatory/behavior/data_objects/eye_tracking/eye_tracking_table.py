@@ -348,10 +348,7 @@ class EyeTrackingTable(DataObject, DataFileReadableInterface,
             times = times.update_timestamps(
                 timestamps=times.value[:len(frames)])
         elif len(frames) > len(times):
-            raise EyeTrackingError(
-                f'Number of eye tracking timestamps: {len(times.value)}. '
-                f'Number of eye tracking frames: {len(frames)}. '
-                f'We expect these to be equal')
+            frames = frames[:len(times)]
         return frames, times
 
 
